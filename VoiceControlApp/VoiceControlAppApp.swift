@@ -84,6 +84,8 @@ class VoiceManager: NSObject, ObservableObject {
     private var recognitionTask: SFSpeechRecognitionTask?
     private var audioEngine = AVAudioEngine()
     private var speechSynthesizer = AVSpeechSynthesizer()
+    private var audioPlayer: AVAudioPlayer?
+    private var audioPlaybackCompletion: (() -> Void)?
     
     private var rulesConfig: RulesConfig?
     private var isAuthorized = false
@@ -157,9 +159,6 @@ class VoiceManager: NSObject, ObservableObject {
         
         recognitionRequest?.endAudio()
         recognitionRequest = nil
-        
-        let audioSession = AVAudioSession.sharedInstance()
-        try? audioSession.setActive(false, options: .notifyOthersOnDeactivation)
     }
     
     // MARK: - Speech Recognition
@@ -183,7 +182,7 @@ class VoiceManager: NSObject, ObservableObject {
         
         let audioSession = AVAudioSession.sharedInstance()
         do {
-            try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
+            try audioSession.setCategory(.playAndRecord, mode: .measurement, options: [.duckOthers, .defaultToSpeaker])
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
             print("音频会话配置失败: \(error)")
@@ -275,19 +274,19 @@ class VoiceManager: NSObject, ObservableObject {
                     lastStateChangeTime = Date()
                 }
                 
-                state = .listening
+                state = .responding
                 lastStateChangeTime = Date() // 更新状态切换时间
                 lastCommand = ""
-                statusMessage = "已唤醒,等待指令..."
+                lastResponse = rulesConfig?.responseText ?? ""
+                statusMessage = "唤醒中..."
                 
-                if let responseText = rulesConfig?.responseText {
-                    speak(responseText)
-                }
-                
-                stopListening()
-                // 减小延迟以提高响应速度
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
-                    self?.startListening()
+                let responseAudio = rulesConfig?.responseAudio ?? ""
+                playAudioIfAvailable(filename: responseAudio) { [weak self] in
+                    guard let self = self else { return }
+                    self.state = .listening
+                    self.lastStateChangeTime = Date()
+                    self.statusMessage = "已唤醒,等待指令..."
+                    self.startListening()
                 }
             }
             
@@ -322,9 +321,10 @@ class VoiceManager: NSObject, ObservableObject {
             performAction(rule.action)
         }
         
-        speak(rule.text)
+        lastResponse = rule.text
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + responseReturnDelay) { [weak self] in
+        let audioFilename = rule.audio
+        playAudioIfAvailable(filename: audioFilename) { [weak self] in
             guard let self = self else { return }
             self.state = .idle
             self.lastStateChangeTime = Date()
@@ -361,12 +361,89 @@ class VoiceManager: NSObject, ObservableObject {
         }
     }
     
-    // MARK: - Text to Speech
-    private func speak(_ text: String) {
-        let utterance = AVSpeechUtterance(string: text)
-        utterance.voice = AVSpeechSynthesisVoice(language: "zh-CN")
-        utterance.rate = 0.5
-        speechSynthesizer.speak(utterance)
+    private func playAudioIfAvailable(filename: String, completion: (() -> Void)? = nil) {
+        guard !filename.isEmpty else {
+            if let completion = completion {
+                DispatchQueue.main.async {
+                    completion()
+                }
+            }
+            return
+        }
+        
+        audioPlaybackCompletion = completion
+        
+        stopListening()
+        
+        let audioSession = AVAudioSession.sharedInstance()
+        do {
+            try audioSession.setActive(true)
+        } catch {
+            print("音频会话配置失败(播放): \(error)")
+            if let completion = completion {
+                DispatchQueue.main.async {
+                    completion()
+                }
+            }
+            return
+        }
+        
+        let parts = filename.split(separator: ".")
+        guard let namePart = parts.first else {
+            print("无效的音频文件名: \(filename)")
+            if let completion = completion {
+                DispatchQueue.main.async {
+                    completion()
+                }
+            }
+            return
+        }
+        let name = String(namePart)
+        let ext = parts.count > 1 ? String(parts.last!) : "mp3"
+        
+        guard let url = Bundle.main.url(forResource: name, withExtension: ext) else {
+            print("找不到音频文件: \(filename)")
+            if let completion = completion {
+                DispatchQueue.main.async {
+                    completion()
+                }
+            }
+            return
+        }
+        
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: url)
+            audioPlayer?.delegate = self
+            audioPlayer?.prepareToPlay()
+            let didPlay = audioPlayer?.play() ?? false
+            let duration = audioPlayer?.duration ?? 0
+            
+            if !didPlay || duration <= 0 {
+                if let completion = completion {
+                    DispatchQueue.main.async {
+                        completion()
+                    }
+                }
+                audioPlaybackCompletion = nil
+                return
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
+                guard let self = self else { return }
+                if let completion = self.audioPlaybackCompletion {
+                    self.audioPlaybackCompletion = nil
+                    completion()
+                }
+            }
+        } catch {
+            print("音频播放失败: \(error)")
+            if let completion = completion {
+                DispatchQueue.main.async {
+                    completion()
+                }
+            }
+            audioPlaybackCompletion = nil
+        }
     }
     
     deinit {
@@ -375,9 +452,18 @@ class VoiceManager: NSObject, ObservableObject {
 }
 
 // MARK: - Speech Synthesizer Delegate
-extension VoiceManager: AVSpeechSynthesizerDelegate {
+extension VoiceManager: AVSpeechSynthesizerDelegate, AVAudioPlayerDelegate {
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
         // 语音播放完成
+    }
+    
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        if let completion = audioPlaybackCompletion {
+            audioPlaybackCompletion = nil
+            DispatchQueue.main.async {
+                completion()
+            }
+        }
     }
 }
 

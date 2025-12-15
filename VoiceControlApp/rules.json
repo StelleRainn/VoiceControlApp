@@ -1,26 +1,26 @@
 {
     "wakeup": "老大",
     "response-text": "Man!",
-    "response-audio": "audio_man",
+    "response-audio": "audio_man.mp3",
     "rules": [
         {   "content":"关灯",
             "text":"manba out!",
-            "audio":"audio_mambaout",
+            "audio":"audio_mambaout.mp3",
             "action":"turn_off_light"
         },
         {   "content":"开灯",
             "text":"what can i say?",
-            "audio":"audio_whatcanisay",
+            "audio":"audio_whatcanisay.mp3",
             "action":"turn_on_light"
         },
         {   "content":"想你了",
             "text":"see you again",
-            "audio":"audio_missyou",
+            "audio":"audio_missyou.mp3",
             "action":""
         },
         {   "content":"坠机",
             "text":"ahhhhhhhhh!",
-            "audio":"audio_crashdown",
+            "audio":"audio_crashdown.mp3",
             "action":""
         }
     ]

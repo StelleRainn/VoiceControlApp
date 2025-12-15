@@ -270,9 +270,9 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = VoiceControlApp/Info.plist;
-				INFOPLIST_KEY_NSCameraUsageDescription = "";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "";
+				INFOPLIST_KEY_NSCameraUsageDescription = "App 需要访问相机以控制手电筒等功能";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "App 需要访问麦克风以识别语音指令";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "App 需要使用语音识别以解析您的语音内容";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -306,9 +306,9 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = VoiceControlApp/Info.plist;
-				INFOPLIST_KEY_NSCameraUsageDescription = "";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "";
+				INFOPLIST_KEY_NSCameraUsageDescription = "App 需要访问相机以控制手电筒等功能";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "App 需要访问麦克风以识别语音指令";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "App 需要使用语音识别以解析您的语音内容";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
