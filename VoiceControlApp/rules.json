@@ -1,0 +1,28 @@
+{
+    "wakeup": "老大",
+    "response-text": "Man!",
+    "response-audio": "audio_man",
+    "rules": [
+        {   "content":"关灯",
+            "text":"manba out!",
+            "audio":"audio_mambaout",
+            "action":"turn_off_light"
+        },
+        {   "content":"开灯",
+            "text":"what can i say?",
+            "audio":"audio_whatcanisay",
+            "action":"turn_on_light"
+        },
+        {   "content":"想你了",
+            "text":"see you again",
+            "audio":"audio_missyou",
+            "action":""
+        },
+        {   "content":"坠机",
+            "text":"ahhhhhhhhh!",
+            "audio":"audio_crashdown",
+            "action":""
+        }
+    ]
+}
+
